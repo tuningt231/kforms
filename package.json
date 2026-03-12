@@ -1,0 +1,15 @@
+{
+  "name": "kforms",
+  "version": "0.1.0",
+  "description": "TypeScript library for creating HTML forms",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "keywords": ["forms", "html", "validation", "typescript"],
+  "author": "",
+  "license": "MIT"
+}

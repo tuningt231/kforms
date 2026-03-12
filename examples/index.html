@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Examples</title>
+</head>
+
+<body>
+    <h1>Hello world</h1>
+    <button onclick="onSelectForm('TestForm')">TestForm</button>
+    <form id="my-form"></form>
+
+</body>
+
+<script type="module">
+    import { TestForm } from './TestForm.js';
+
+    globalThis.onSelectForm = (formName) => {
+        const formElement = document.getElementById('my-form');
+        formElement.innerHTML = '';
+
+        const forms = {
+            'TestForm': () => new TestForm().render(formElement),
+        };
+
+        forms[formName]();
+    }
+</script>
+
+</html>
