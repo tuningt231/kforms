@@ -2,28 +2,55 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Examples</title>
+    <title>KForms Examples</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="kform.css">
 </head>
 
 <body>
-    <h1>Hello world</h1>
-    <button onclick="onSelectForm('TestForm')">TestForm</button>
-    <form id="my-form"></form>
+    <h1>KForms Examples</h1>
+    <h3>Основные примеры:</h3>
+    <div class="button-container">
+        <button onclick="onSelectForm('TestForm')">Test Form</button>
+        <button onclick="onSelectForm('LoginForm')">Login Form</button>
+        <button onclick="onSelectForm('FeedbackForm')">Feedback Form</button>
+        <button onclick="onSelectForm('DeliveryDateForm')">Delivery Date</button>
+        <button onclick="onSelectForm('EventSelectForm')">Event Select</button>
+        <button onclick="onSelectForm('GradeForm')">Grade Form</button>
+    </div>
 
+    <div id="form-container"></div>
 </body>
 
 <script type="module">
     import { TestForm } from './TestForm.js';
+    import { LoginForm } from './LoginForm.js';
+    import { FeedbackForm } from './FeedbackForm.js';
+    import { DeliveryDateForm } from './DeliveryDateForm.js';
+    import { EventSelectForm } from './EventSelectForm.js';
+    import { GradeForm } from './GradeForm.js';
 
     globalThis.onSelectForm = (formName) => {
-        const formElement = document.getElementById('my-form');
-        formElement.innerHTML = '';
+        const formContainer = document.getElementById('form-container');
+        formContainer.innerHTML = '';
 
         const forms = {
-            'TestForm': () => new TestForm().render(formElement),
+            'TestForm': () => new TestForm().render(),
+            'LoginForm': () => new LoginForm().render(),
+            'FeedbackForm': () => new FeedbackForm().render(),
+            'DeliveryDateForm': () => new DeliveryDateForm().render(),
+            'EventSelectForm': () => new EventSelectForm().render(),
+            'GradeForm': () => new GradeForm().render(),
+            'AppointmentForm': () => new AppointmentForm().render(),
+            'WorkScheduleForm': () => new WorkScheduleForm().render(),
+            'ThemeSettingsForm': () => new ThemeSettingsForm().render(),
+            'EventRegistrationForm': () => new EventRegistrationForm().render(),
+            'AlarmForm': () => new AlarmForm().render(),
         };
 
-        forms[formName]();
+        const newForm = forms[formName]();
+        formContainer.appendChild(newForm);
+
     }
 </script>
 

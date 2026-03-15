@@ -26,13 +26,14 @@ export class Form {
         for (const key of Object.keys(this)) {
             const field = (this as any)[key];
             if (field instanceof Field) {
-                const fieldElement = field.renderElement();
+                const fieldElement = field.renderElement(key);
                 this.formElement.appendChild(fieldElement);
             }
         }
 
         // Добавить submit кнопку
         const submitButton = document.createElement('input');
+        submitButton.className = 'kform-submit';
         submitButton.setAttribute('type', 'submit');
         this.formElement.appendChild(submitButton);
 

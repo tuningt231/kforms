@@ -1,9 +1,10 @@
+import type { FieldOption } from "./fieldTypes/FieldOption.js";
 
 /**
  * Тип для валидационных колбэков
  * Возвращает кортеж: [успех, сообщение об ошибке (опционально)]
  */
-export type ValidatorFunction<T> = (value: T) => {isValid: boolean, message?: string};
+export type ValidatorFunction<T> = (value: T) => { isValid: boolean, message?: string };
 
 export type DefaultValidatorFunction<T> = (value: T) => boolean;
 
@@ -11,7 +12,7 @@ export type DefaultValidatorFunction<T> = (value: T) => boolean;
  * Тип для требующих валидационных колбэков (required)
  * Возвращает кортеж: [успех, сообщение об ошибке (опционально)]
  */
-export type RequiredFunction = () => {isRequired: boolean, message?: string};
+export type RequiredFunction = () => { isRequired: boolean, message?: string };
 
 export type DefaultRequiredFunction = () => boolean;
 
@@ -23,27 +24,36 @@ export type TransformFunction<T, R> = (value: T) => R;
 /**
  * Базовый класс для полей формы
  */
-export class Field<T> {
-    protected _value: T | undefined;
+export abstract class Field<T> {
+    protected _value: T | null = null;
     protected _label: string;
-    protected _fieldType: string = 'text';
+    protected _inputType: string = 'text';
     protected _errors: string[] = [];
 
-    // DOM элементы
-    protected wrapperElement: HTMLElement | null = null;
-    protected inputElement: HTMLInputElement | null = null;
-    protected errorElement: HTMLElement | null = null;
+    protected _options: FieldOption<T>[] = [];
 
-    /**
-     * Массивы колбэков
-     */
+    protected errorContainer: HTMLElement | null = null;
+    protected fieldContainer: HTMLElement | null = null;
+    protected baseElement: HTMLElement | null = null;
+
     protected requiredCallbacks: RequiredFunction[] = [];
     protected validationCallbacks: ValidatorFunction<T>[] = [];
     protected transformCallbacks: TransformFunction<any, any>[] = [];
 
+    protected updateListeners: Array<() => void> = [];
+
     constructor(label: string, fieldType: string = 'text') {
         this._label = label;
-        this._fieldType = fieldType;
+        this._inputType = fieldType;
+    }
+
+    /**
+     * Получить преобразованное значение поля
+     * Может быть переопределено в подклассах для преобразования типов
+     * @returns значение поля в правильном типе
+     */
+    get value(): T | null {
+        return this._value;
     }
 
     /**
@@ -51,6 +61,7 @@ export class Field<T> {
      * @returns true если поле пустое (undefined, null или пустая строка)
      */
     isEmpty(): boolean {
+        if (Array.isArray(this._value)) return this._value.length === 0;
         return this._value === undefined || this._value === null || this._value === '';
     }
 
@@ -63,7 +74,7 @@ export class Field<T> {
 
         if (this.isEmpty()) {
             for (const callback of this.requiredCallbacks) {
-                const {isRequired, message} = callback();
+                const { isRequired, message } = callback();
                 if (isRequired) {
                     this._errors.push(message || 'Required');
                     this.updateDisplayedErrors();
@@ -75,8 +86,9 @@ export class Field<T> {
         }
 
         // not empty, so no matter if it is required or not
+        const value = this._value;
         for (const callback of this.validationCallbacks) {
-            const {isValid, message}  = callback(this._value as T);
+            const { isValid, message } = callback(value as T);
             if (!isValid) {
                 this._errors.push(message || 'Invalid value');
                 this.updateDisplayedErrors();
@@ -93,88 +105,161 @@ export class Field<T> {
      * @returns трансформированное значение
      */
     runTransforms(): any {
-        let result: any = this._value;
-
+        let result = this._value;
         for (const transform of this.transformCallbacks) {
             result = transform(result);
         }
-
         return result;
     }
 
     /**
      * Создает и возвращает DOM-элемент поля
+     * @param fieldName имя поля (совпадает с именем свойства в классе Form),
+     *             устанавливается как атрибуты id и name на элементе управления
      * @returns HTMLElement с полем формы
      */
-    renderElement(): HTMLElement {
-        // Создаем обертку
-        this.wrapperElement = document.createElement('div');
-        this.wrapperElement.className = 'kform-field';
-
-        // Создаем label
-        const label = document.createElement('label');
-        label.className = 'kform-label';
-        label.textContent = this._label;
-
-        // Создаем input
-        this.inputElement = this.createInput();
-
-        // Привязываем обработчик изменений
-        this.inputElement.addEventListener('input', (e) => {
-            this.handleInputChange(e);
-        });
-
-        // Создаем контейнер для ошибок
-        this.errorElement = document.createElement('div');
-        this.errorElement.className = 'kform-error';
-        this.errorElement.style.display = 'none';
-
-        // Собираем элемент
-        this.wrapperElement.appendChild(label);
-        this.wrapperElement.appendChild(this.inputElement);
-        this.wrapperElement.appendChild(this.errorElement);
-
-        return this.wrapperElement;
-    }
+    abstract renderElement(fieldName: string): HTMLElement;
 
     /**
-     * Создает input элемент
-     * Может быть переопределен в подклассах
+     * Колбэк, вызываемый при изменении элемента ввода
      */
-    protected createInput(): HTMLInputElement {
-        const input = document.createElement('input');
-        input.type = this._fieldType;
+    protected abstract fieldChanged(sender: HTMLElement, data?: object): void;
 
-        if (this._value !== undefined) {
-            input.value = String(this._value);
+
+    protected createInput(container: HTMLElement, name: string, type: string, label: string): HTMLInputElement {
+        const input = document.createElement('input');
+        input.className = 'kform-control';
+        input.type = type;
+
+        input.addEventListener('input', (e) => {
+            this.fieldChanged(input);
+        });
+
+        const labelTag = document.createElement('label');
+        labelTag.innerText = label;
+
+        if (name !== undefined) {
+            input.name = name;
+            input.id = name;
+            labelTag.htmlFor = name;
         }
 
+        container.appendChild(labelTag);
+        container.appendChild(input);
         return input;
     }
+
+
+    protected createInputArray(container: HTMLElement, name: string, type: string, options: FieldOption<T>[]): HTMLInputElement[] {
+        const ret: HTMLInputElement[] = [];
+        options.forEach((option, idx) => {
+            const input = document.createElement('input');
+            input.className = 'kform-control';
+            input.type = type;
+
+            input.addEventListener('change', () => {
+                this.fieldChanged(input, {option: option});
+            });
+
+            const label = document.createElement('label');
+            label.innerText = option.label;
+
+            if (name !== undefined) {
+                input.name = name;
+                input.id = name + '-' + idx;
+                label.htmlFor = name + '-' + idx;
+            }
+
+            container.appendChild(label);
+            container.appendChild(input);
+            ret.push(input);
+        });
+        return ret;
+    }
+
+
+    protected setupDefaultHtmlStructure(): HTMLElement {
+        this.baseElement = document.createElement('div');
+        this.fieldContainer = document.createElement('div');
+        this.errorContainer = document.createElement('div');
+        this.baseElement.className = 'kform-field';
+        this.fieldContainer.className = 'kform-input-container';
+        this.errorContainer.className = 'kform-error-container';
+        this.baseElement.appendChild(this.fieldContainer);
+        this.baseElement.appendChild(this.errorContainer);
+        return this.baseElement;
+    }
+
+    protected setupDefaultInputElement(inputName: string): HTMLInputElement | undefined {
+        if (!this.fieldContainer) return undefined;
+        const input = this.createInput(this.fieldContainer, inputName, this._inputType, this._label);
+        this.addUnfocusChecks(this.fieldContainer);
+        return input;
+    }
+
+    protected addUnfocusChecks(node: HTMLElement): void {
+        node.addEventListener('focusout', (e) => {
+            const relatedTarget = (e as FocusEvent).relatedTarget as Node | null;
+            if (relatedTarget && node?.contains(relatedTarget)) return;
+            this.runAllChecks();
+        });
+    }
+
 
     /**
      * Обработчик изменения значения input
      */
-    protected handleInputChange(event: Event): void {
-        const target = event.target as HTMLInputElement;
-        this._value = target.value as any;
+    protected setValue(value: T): void {
+        console.log("Set value: " + value);
+        
+        this._value = value;
         this._errors = []; // Сбрасываем ошибки при изменении
         this.updateDisplayedErrors();
+        for (const callback of this.updateListeners) {
+            callback();
+        }
     }
 
     /**
      * Обновляет отображение ошибок в DOM
      */
     protected updateDisplayedErrors(): void {
-        if (!this.errorElement) return;
+        if (!this.errorContainer) return;
 
         if (this._errors.length > 0) {
-            this.errorElement.textContent = this._errors.join(', ');
-            this.errorElement.style.display = 'block';
+            this.errorContainer.textContent = this._errors.join(', ');
+            // this.errorContainer.style.display = 'block';
         } else {
-            this.errorElement.textContent = '';
-            this.errorElement.style.display = 'none';
+            this.errorContainer.textContent = '';
+            // this.errorContainer.style.display = 'none';
         }
+    }
+
+    protected setOptionsInternal(opts: FieldOption<T>[] | T[]): this {
+        this._options = opts.map(opt => {
+            if (typeof opt === 'object' && opt !== null && 'value' in opt) {
+                return {value: opt.value, label: opt.label || String(opt.value)};
+            }
+            return { value: opt, label: String(opt) };
+        });
+        return this;
+    }
+
+    /**
+     * Подписаться на изменение значения поля
+     */
+    addUpdateListener(callback: () => void): this {
+        this.updateListeners.push(callback);
+        return this;
+    }
+
+    dependsOn(...fields: Field<any>[]): this {
+        for (const field of fields) {
+            field.addUpdateListener(() => {
+                this.runAllChecks();
+            });
+        }
+        return this;
     }
 
     validate(func: ValidatorFunction<T> | DefaultValidatorFunction<T>): this {
@@ -193,7 +278,7 @@ export class Field<T> {
         const normalizedFunc: RequiredFunction = () => {
             const isRequired = func();
             if (typeof isRequired === 'boolean') {
-                return {isRequired};
+                return { isRequired };
             }
             return isRequired;
         }
@@ -204,7 +289,7 @@ export class Field<T> {
     required(message?: string): this {
         if (message === undefined)
             return this.requiredWhen(() => true);
-        return this.requiredWhen(() => ({isRequired: true, message}));
+        return this.requiredWhen(() => ({ isRequired: true, message }));
     }
 
     transform(func: TransformFunction<any, any>): this {

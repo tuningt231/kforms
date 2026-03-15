@@ -1,0 +1,64 @@
+.kform-field {
+    margin-bottom: 20px;
+}
+
+
+/* .kform-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+} */
+
+/* .kform-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+} */
+
+/* .kform-textarea {
+    min-height: 100px;
+    resize: vertical;
+} */
+
+.kform-error-container {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: inline;
+}
+
+.kform-input-container {
+    display: inline;
+}
+
+/* .kform-radio-group,
+.kform-checkbox-group {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 8px;
+    align-items: center;
+} */
+
+/* .kform-radio-option,
+.kform-checkbox-option {
+    cursor: pointer;
+} */
+
+.kform-submit {
+    margin-top: 20px;
+    padding: 10px 30px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.kform-submit:hover {
+    background-color: #218838;
+}
