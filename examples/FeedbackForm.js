@@ -24,7 +24,7 @@ export class FeedbackForm extends Form {
                 label: 'Я согласен с политикой компании'
             }
         ])
-        .requiredMin(2, 'Необходимо согласие со всеми пунктами')
+        .minSelected(2, 'Необходимо согласие со всеми пунктами')
 
     onSubmit(values) {
         console.log('Feedback Form submitted:', values);

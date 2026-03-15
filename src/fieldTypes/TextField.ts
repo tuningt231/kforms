@@ -8,10 +8,16 @@ export class TextField extends Field<string> {
         super(label, fieldType);
     }
 
-    override renderElement(fieldName: string): HTMLElement {
-        const base = this.setupDefaultHtmlStructure();
-        this.setupDefaultInputElement(fieldName);
-        return base;
+    override attachElement(base: HTMLElement): void {
+        const fieldContainer = this.bindBaseElements(base);
+        const input = base.querySelector('input.kform-control');
+        if (!(input instanceof HTMLInputElement)) {
+            throw new Error('TextField input not found');
+        }
+        this.bindDomListener(input, 'input', () => {
+            this.fieldChanged(input);
+        });
+        this.addUnfocusChecks(fieldContainer);
     }
 
     protected override fieldChanged(sender: HTMLElement, data?: object): void {

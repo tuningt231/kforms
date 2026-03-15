@@ -11,14 +11,33 @@ export class FileField extends Field<File | File[]> {
         super(label, 'file');
     }
 
-    override renderElement(fieldName: string): HTMLElement {
-        const base = this.setupDefaultHtmlStructure();
-        this.setupDefaultInputElement(fieldName);
-        return base;
+    override attachElement(base: HTMLElement): void {
+        const fieldContainer = this.bindBaseElements(base);
+        const input = base.querySelector('input.kform-control[type="file"]');
+        if (!(input instanceof HTMLInputElement)) {
+            throw new Error('FileField input not found');
+        }
+
+        input.multiple = this._multiple;
+        this.bindDomListener(input, 'change', () => {
+            this.fieldChanged(input);
+        });
+        this.addUnfocusChecks(fieldContainer);
     }
 
     protected fieldChanged(sender: HTMLElement, data?: object): void {
-        throw new Error('Method not implemented.'); // todo:
+        const files = (sender as HTMLInputElement).files;
+        if (!files || files.length === 0) {
+            this.setValue(null);
+            return;
+        }
+
+        if (this._multiple) {
+            this.setValue(Array.from(files));
+            return;
+        }
+
+        this.setValue(files[0] as File);
     }
 
     /**
@@ -27,6 +46,10 @@ export class FileField extends Field<File | File[]> {
     multiple(): this {
         this._multiple = true;
         return this;
+    }
+
+    isMultiple(): boolean {
+        return this._multiple;
     }
 
     /**
@@ -59,29 +82,4 @@ export class FileField extends Field<File | File[]> {
             };
         });
     }
-
-    // protected createInput(): HTMLInputElement {
-    //     const input = document.createElement('input');
-    //     input.className = 'kform-control';
-    //     input.type = 'file';
-        
-    //     if (this._multiple) {
-    //         input.multiple = true;
-    //     }
-        
-    //     return input;
-    // }
-
-    /**
-     * Получить значение поля - файл или массив файлов
-     */
-    // getValue(): File | File[] | undefined {
-    //     if (!this.inputElement || !this.inputElement.files || this.inputElement.files.length === 0) {
-    //         return undefined;
-    //     }
-    //     return this._multiple 
-    //         ? Array.from(this.inputElement.files)
-    //         : this.inputElement.files[0];
-    // }
-
 }

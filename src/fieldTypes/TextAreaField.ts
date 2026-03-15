@@ -8,11 +8,16 @@ export class TextAreaField extends Field<string> {
         super(label, 'textarea');
     }
 
-    override renderElement(fieldName: string): HTMLElement {
-        const base = this.setupDefaultHtmlStructure();
-        const input = this.createTextArea(this.fieldContainer!, fieldName, this._label);
-        this.addUnfocusChecks(input);
-        return base;
+    override attachElement(base: HTMLElement): void {
+        const fieldContainer = this.bindBaseElements(base);
+        const input = base.querySelector('textarea.kform-control');
+        if (!(input instanceof HTMLTextAreaElement)) {
+            throw new Error('TextAreaField textarea not found');
+        }
+        this.bindDomListener(input, 'input', () => {
+            this.fieldChanged(input);
+        });
+        this.addUnfocusChecks(fieldContainer);
     }
 
     protected override fieldChanged(sender: HTMLElement, data?: object): void {
@@ -61,28 +66,5 @@ export class TextAreaField extends Field<string> {
             };
         });
     }
-
-    private createTextArea(container: HTMLElement, name: string, label: string): HTMLElement {
-        const input = document.createElement('textarea');
-        input.className = 'kform-control';
-
-        input.addEventListener('input', () => {
-            this.fieldChanged(input);
-        });
-
-        const labelTag = document.createElement('label');
-        labelTag.innerText = label;
-
-        if (name !== undefined) {
-            input.name = name;
-            input.id = name;
-            labelTag.htmlFor = name;
-        }
-
-        container.appendChild(labelTag);
-        container.appendChild(input);
-        return input;
-    }
-
 
 }

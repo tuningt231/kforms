@@ -32,19 +32,32 @@ export abstract class Field<T> {
 
     protected _options: FieldOption<T>[] = [];
 
-    protected errorContainer: HTMLElement | null = null;
-    protected fieldContainer: HTMLElement | null = null;
-    protected baseElement: HTMLElement | null = null;
+    protected _errorContainer: HTMLElement | null = null;
+    protected _fieldContainer: HTMLElement | null = null;
+    protected _baseElement: HTMLElement | null = null;
 
-    protected requiredCallbacks: RequiredFunction[] = [];
-    protected validationCallbacks: ValidatorFunction<T>[] = [];
-    protected transformCallbacks: TransformFunction<any, any>[] = [];
+    private _requiredCallbacks: RequiredFunction[] = [];
+    private _validationCallbacks: ValidatorFunction<T>[] = [];
+    private _transformCallbacks: TransformFunction<any, any>[] = [];
 
-    protected updateListeners: Array<() => void> = [];
+    private _updateListeners: Array<() => void> = [];
+    private _domUnbinders: Array<() => void> = [];
 
     constructor(label: string, fieldType: string = 'text') {
         this._label = label;
         this._inputType = fieldType;
+    }
+
+    get label(): string {
+        return this._label;
+    }
+
+    get inputType(): string {
+        return this._inputType;
+    }
+
+    get rendererOptions(): FieldOption<T>[] {
+        return this._options;
     }
 
     /**
@@ -73,7 +86,7 @@ export abstract class Field<T> {
         this._errors = [];
 
         if (this.isEmpty()) {
-            for (const callback of this.requiredCallbacks) {
+            for (const callback of this._requiredCallbacks) {
                 const { isRequired, message } = callback();
                 if (isRequired) {
                     this._errors.push(message || 'Required');
@@ -87,7 +100,7 @@ export abstract class Field<T> {
 
         // not empty, so no matter if it is required or not
         const value = this._value;
-        for (const callback of this.validationCallbacks) {
+        for (const callback of this._validationCallbacks) {
             const { isValid, message } = callback(value as T);
             if (!isValid) {
                 this._errors.push(message || 'Invalid value');
@@ -106,19 +119,13 @@ export abstract class Field<T> {
      */
     runTransforms(): any {
         let result = this._value;
-        for (const transform of this.transformCallbacks) {
+        for (const transform of this._transformCallbacks) {
             result = transform(result);
         }
         return result;
     }
 
-    /**
-     * Создает и возвращает DOM-элемент поля
-     * @param fieldName имя поля (совпадает с именем свойства в классе Form),
-     *             устанавливается как атрибуты id и name на элементе управления
-     * @returns HTMLElement с полем формы
-     */
-    abstract renderElement(fieldName: string): HTMLElement;
+    abstract attachElement(base: HTMLElement): void;
 
     /**
      * Колбэк, вызываемый при изменении элемента ввода
@@ -126,96 +133,57 @@ export abstract class Field<T> {
     protected abstract fieldChanged(sender: HTMLElement, data?: object): void;
 
 
-    protected createInput(container: HTMLElement, name: string, type: string, label: string): HTMLInputElement {
-        const input = document.createElement('input');
-        input.className = 'kform-control';
-        input.type = type;
-
-        input.addEventListener('input', (e) => {
-            this.fieldChanged(input);
-        });
-
-        const labelTag = document.createElement('label');
-        labelTag.innerText = label;
-
-        if (name !== undefined) {
-            input.name = name;
-            input.id = name;
-            labelTag.htmlFor = name;
-        }
-
-        container.appendChild(labelTag);
-        container.appendChild(input);
-        return input;
-    }
-
-
-    protected createInputArray(container: HTMLElement, name: string, type: string, options: FieldOption<T>[]): HTMLInputElement[] {
-        const ret: HTMLInputElement[] = [];
-        options.forEach((option, idx) => {
-            const input = document.createElement('input');
-            input.className = 'kform-control';
-            input.type = type;
-
-            input.addEventListener('change', () => {
-                this.fieldChanged(input, {option: option});
-            });
-
-            const label = document.createElement('label');
-            label.innerText = option.label;
-
-            if (name !== undefined) {
-                input.name = name;
-                input.id = name + '-' + idx;
-                label.htmlFor = name + '-' + idx;
-            }
-
-            container.appendChild(label);
-            container.appendChild(input);
-            ret.push(input);
-        });
-        return ret;
-    }
-
-
-    protected setupDefaultHtmlStructure(): HTMLElement {
-        this.baseElement = document.createElement('div');
-        this.fieldContainer = document.createElement('div');
-        this.errorContainer = document.createElement('div');
-        this.baseElement.className = 'kform-field';
-        this.fieldContainer.className = 'kform-input-container';
-        this.errorContainer.className = 'kform-error-container';
-        this.baseElement.appendChild(this.fieldContainer);
-        this.baseElement.appendChild(this.errorContainer);
-        return this.baseElement;
-    }
-
-    protected setupDefaultInputElement(inputName: string): HTMLInputElement | undefined {
-        if (!this.fieldContainer) return undefined;
-        const input = this.createInput(this.fieldContainer, inputName, this._inputType, this._label);
-        this.addUnfocusChecks(this.fieldContainer);
-        return input;
-    }
-
     protected addUnfocusChecks(node: HTMLElement): void {
-        node.addEventListener('focusout', (e) => {
+        this.bindDomListener(node, 'focusout', (e) => {
             const relatedTarget = (e as FocusEvent).relatedTarget as Node | null;
             if (relatedTarget && node?.contains(relatedTarget)) return;
             this.runAllChecks();
         });
     }
 
+    protected bindBaseElements(base: HTMLElement): HTMLElement {
+        this.resetDomBindings();
+
+        this._baseElement = base;
+        this._fieldContainer = base.querySelector('.kform-input-container');
+        this._errorContainer = base.querySelector('.kform-error-container');
+
+        if (!this._fieldContainer) {
+            this._fieldContainer = document.createElement('div');
+            this._fieldContainer.className = 'kform-input-container';
+            this._fieldContainer.setAttribute('data-slot', 'input');
+            base.appendChild(this._fieldContainer);
+        }
+
+        if (!this._errorContainer) {
+            this._errorContainer = document.createElement('div');
+            this._errorContainer.className = 'kform-error-container';
+            this._errorContainer.setAttribute('data-slot', 'error');
+            base.appendChild(this._errorContainer);
+        }
+
+        return this._fieldContainer;
+    }
+
+    protected bindDomListener(target: EventTarget, type: string, listener: EventListener): void {
+        target.addEventListener(type, listener);
+        this._domUnbinders.push(() => target.removeEventListener(type, listener));
+    }
+
+    private resetDomBindings(): void {
+        this._domUnbinders.forEach(unbind => unbind());
+        this._domUnbinders = [];
+    }
+
 
     /**
      * Обработчик изменения значения input
      */
-    protected setValue(value: T): void {
-        console.log("Set value: " + value);
-        
+    protected setValue(value: T | null): void {
         this._value = value;
         this._errors = []; // Сбрасываем ошибки при изменении
         this.updateDisplayedErrors();
-        for (const callback of this.updateListeners) {
+        for (const callback of this._updateListeners) {
             callback();
         }
     }
@@ -224,13 +192,13 @@ export abstract class Field<T> {
      * Обновляет отображение ошибок в DOM
      */
     protected updateDisplayedErrors(): void {
-        if (!this.errorContainer) return;
+        if (!this._errorContainer) return;
 
         if (this._errors.length > 0) {
-            this.errorContainer.textContent = this._errors.join(', ');
+            this._errorContainer.textContent = this._errors.join(', ');
             // this.errorContainer.style.display = 'block';
         } else {
-            this.errorContainer.textContent = '';
+            this._errorContainer.textContent = '';
             // this.errorContainer.style.display = 'none';
         }
     }
@@ -249,7 +217,7 @@ export abstract class Field<T> {
      * Подписаться на изменение значения поля
      */
     addUpdateListener(callback: () => void): this {
-        this.updateListeners.push(callback);
+        this._updateListeners.push(callback);
         return this;
     }
 
@@ -270,7 +238,7 @@ export abstract class Field<T> {
             }
             return result;
         };
-        this.validationCallbacks.push(normalizedFunc);
+        this._validationCallbacks.push(normalizedFunc);
         return this;
     }
 
@@ -282,7 +250,7 @@ export abstract class Field<T> {
             }
             return isRequired;
         }
-        this.requiredCallbacks.push(normalizedFunc);
+        this._requiredCallbacks.push(normalizedFunc);
         return this;
     }
 
@@ -293,7 +261,7 @@ export abstract class Field<T> {
     }
 
     transform(func: TransformFunction<any, any>): this {
-        this.transformCallbacks.push(func);
+        this._transformCallbacks.push(func);
         return this;
     }
 

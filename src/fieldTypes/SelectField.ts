@@ -15,56 +15,25 @@ export class SelectField<T> extends Field<T> {
         return super.setOptionsInternal(opts);
     }
 
-    override renderElement(fieldName: string): HTMLElement {
-        const base = this.setupDefaultHtmlStructure();
-        this.createSelectElement(this.fieldContainer!, fieldName, this._label, this._options);
-        this.addUnfocusChecks(this.fieldContainer!);
-        return base;
-    }
-
-    private createSelectElement(container: HTMLElement, name: string, label: string, options: FieldOption<T>[]): HTMLSelectElement {
-        const labelTag = document.createElement('label');
-        labelTag.innerText = label;
-        labelTag.htmlFor = name;
-
-        const select = document.createElement('select');
-        select.className = 'kform-control';
-        select.name = name;
-        select.id = name;
-
-        select.addEventListener('input', (e) => {
-            console.log(e);
-            
-            this.fieldChanged(select);
-        });
-
-        const emptyOption = document.createElement('option');
-        emptyOption.value = '';
-        emptyOption.textContent = '';
-        select.appendChild(emptyOption);
-
-        for (const option of options) {
-            const optElement = document.createElement('option');
-            optElement.value = String(option.value);
-            optElement.textContent = option.label;
-            select.appendChild(optElement);
+    override attachElement(base: HTMLElement): void {
+        const fieldContainer = this.bindBaseElements(base);
+        const select = base.querySelector('select.kform-control');
+        if (!(select instanceof HTMLSelectElement)) {
+            throw new Error('SelectField select not found');
         }
 
-        container.appendChild(labelTag);
-        container.appendChild(select);
-
-        return select;
+        this.bindDomListener(select, 'input', () => {
+            this.fieldChanged(select);
+        });
+        this.addUnfocusChecks(fieldContainer);
     }
 
     protected override fieldChanged(sender: HTMLElement, data?: object): void {
         const value = (sender as HTMLSelectElement).value;
         if (value === '') {
-            this.setValue(null as T);
+            this.setValue(null);
             return;
         }
-
-        console.log(sender);
-        
 
         const selectedOption = this._options.find(option => String(option.value) === value);
         if (selectedOption) {
