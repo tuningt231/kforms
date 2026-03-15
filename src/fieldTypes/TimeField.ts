@@ -8,6 +8,9 @@ export class TimeField extends Field<string> {
         super(label, 'time');
     }
     
+    /**
+	 * Привязывает поле к дом-дереву, находит `<input type="time">` и навешивает обработчик. 
+	 */
     override attachElement(base: HTMLElement): void {
         const fieldContainer = this.bindBaseElements(base);
         const input = base.querySelector('input.kform-control');
@@ -20,12 +23,17 @@ export class TimeField extends Field<string> {
         this.addUnfocusChecks(fieldContainer);
     }
 
+    /**
+	 * Обновляет значение поля строкой времени в формате `HH:MM`. 
+	 */
     protected override fieldChanged(sender: HTMLElement, data?: object): void {
         this.setValue((sender as HTMLInputElement).value);
     }
 
     /**
-     * Валидация минимального времени
+     * Валидация минимального времени.
+     * @param minTime - нижняя граница времени в формате `HH:MM`
+     * @param message - переопределение сообщения об ошибке
      */
     min(minTime: string, message?: string): this {
         return this.validate(value => ({
@@ -35,7 +43,9 @@ export class TimeField extends Field<string> {
     }
 
     /**
-     * Валидация максимального времени
+     * Валидация максимального времени.
+     * @param maxTime - верхняя граница времени в формате `HH:MM`
+     * @param message - переопределение сообщения об ошибке
      */
     max(maxTime: string, message?: string): this {
         return this.validate(value => ({
@@ -45,7 +55,10 @@ export class TimeField extends Field<string> {
     }
 
     /**
-     * Валидация диапазона времени
+     * Валидация диапазона времени.
+     * @param minTime - начало диапазона в формате `HH:MM`
+     * @param maxTime - конец диапазона в формате `HH:MM`
+     * @param message - переопределение сообщения об ошибке
      */
     between(minTime: string, maxTime: string, message?: string): this {
         return this.validate(value => ({

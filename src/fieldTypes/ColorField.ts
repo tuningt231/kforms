@@ -9,6 +9,9 @@ export class ColorField extends Field<string> {
         this.validateHex(message || 'Неверный формат HEX цвета');
     }
 
+    /**
+	 * Привязывает поле к дом-дереву, находит `<input type="color">` и навешивает обработчик. 
+	 */
     override attachElement(base: HTMLElement): void {
         const fieldContainer = this.bindBaseElements(base);
         const input = base.querySelector('input.kform-control');
@@ -21,10 +24,16 @@ export class ColorField extends Field<string> {
         this.addUnfocusChecks(fieldContainer);
     }
 
+    /**
+	 * Обновляет значение поля HEX-строкой цвета. 
+	 */
     protected override fieldChanged(sender: HTMLElement, data?: object): void {
         this.setValue((sender as HTMLInputElement).value);
     }
 
+    /**
+	 * Внутренняя валидация формата HEX-цвета. 
+	 */
     private validateHex(message: string): this {
         return this.validate(value => ({
             isValid: /^#[0-9A-Fa-f]{6}$/.test(value),

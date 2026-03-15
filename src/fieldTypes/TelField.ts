@@ -9,6 +9,9 @@ export class TelField extends TextField {
         this.validatePhone(message || 'Неверный формат телефона');
     }
 
+    /**
+	 * Внутренняя валидация формата номера телефона. 
+	 */
     private validatePhone(message: string): this {
         return this.match(/^[\d\s\-\+\(\)]+$/, message);
     }

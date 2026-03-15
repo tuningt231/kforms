@@ -7,6 +7,9 @@ import { DefaultRenderer } from './DefaultRenderer.js';
 export class Form {
     protected formElement: HTMLFormElement | null = null;
 
+    /**
+	 * Обработчик отправки формы: предотвращает дефолтное поведение, запускает валидацию и вызывает `onSubmit`. 
+	 */
     private readonly onFormSubmit = (e: Event): void => {
         e.preventDefault();
         if (this.validateAll()) {
@@ -16,17 +19,18 @@ export class Form {
     };
 
     /**
-     * Рендерит форму и возвращает DOM-элемент
-     * @returns HTMLFormElement с формой
+     * Рендерит форму, Οбёртка над `attach`: если элемент не передан, создаёт новый `<form>`.
+     * @param form - необязательный существующий `HTMLFormElement`
+     * @returns рендерное DOM-дерево формы
      */
     render(form?: HTMLFormElement): HTMLFormElement {
         return this.attach(form || document.createElement('form'));
     }
 
     /**
-     * Привязывает форму к существующей HTML-разметке
-     * @param form существующий HTMLFormElement
-     * @returns HTMLFormElement с привязанными полями
+     * Привязывает поля формы к существующей HTML-разметке, достраивая недостающие элементы. Назначение `render()` является алиасом этого метода.
+     * @param form - `HTMLFormElement`, к которому привязывается форма
+     * @returns тот же `HTMLFormElement` с привязанными полями
      */
     attach(form: HTMLFormElement): HTMLFormElement {
         this.formElement = form;
@@ -46,11 +50,17 @@ export class Form {
         return this.formElement;
     }
 
+    /**
+	 * Идемпотентно регистрирует обработчик `submit` на элементе формы. 
+	 */
     private bindSubmitHandler(form: HTMLFormElement): void {
         form.removeEventListener('submit', this.onFormSubmit);
         form.addEventListener('submit', this.onFormSubmit);
     }
 
+    /**
+	 * Ищет корневой элемент `.kform-field` для указанного поля внутри формы. 
+	 */
     private findFieldBaseElement(form: HTMLFormElement, fieldName: string): HTMLElement | null {
         const byDataFieldName = form.querySelector(`.kform-field[data-field-name="${fieldName}"]`);
         if (byDataFieldName instanceof HTMLElement) {
@@ -72,6 +82,9 @@ export class Form {
         return null;
     }
 
+    /**
+	 * Возвращает существующий базовый элемент поля или, если он отсутствует, генерирует его через `DefaultRenderer` и добавляет в форму. 
+	 */
     private findOrCreateFieldBase(form: HTMLFormElement, field: Field<any>, fieldName: string): HTMLElement {
         const existingBase = this.findFieldBaseElement(form, fieldName);
         if (existingBase instanceof HTMLElement) {
@@ -84,6 +97,9 @@ export class Form {
         return generatedField;
     }
 
+    /**
+	 * Достраивает недостающие слоты и элементы внутри корневого элемента поля цвет шаблона `DefaultRenderer`. 
+	 */
     private ensureFieldMarkup(base: HTMLElement, field: Field<any>, fieldName: string): HTMLElement {
         base.classList.add('kform-field');
         base.setAttribute('data-field-name', fieldName);
@@ -113,6 +129,9 @@ export class Form {
         return base;
     }
 
+    /**
+	 * Переносит из `source` в `target` дочерние элементы, аналоги которых в `target` отсутствуют. 
+	 */
     private mergeMissingChildren(target: HTMLElement, source: HTMLElement): void {
         for (const sourceChild of Array.from(source.children)) {
             if (!(sourceChild instanceof HTMLElement)) continue;
@@ -123,6 +142,9 @@ export class Form {
         }
     }
 
+    /**
+	 * Проверяет, есть ли в `container` элемент, эквивалентный `child` по атрибутам `data-role` и идентификаторам. 
+	 */
     private hasEquivalentChild(container: HTMLElement, child: HTMLElement): boolean {
         const role = child.getAttribute('data-role');
         if (role === 'label') {
@@ -168,6 +190,9 @@ export class Form {
         return false;
     }
 
+    /**
+	 * Добавляет кнопку отправки, если она ещё не присутствует в форме. 
+	 */
     private ensureSubmitButton(form: HTMLFormElement): void {
         const hasSubmit = form.querySelector('input[type="submit"], button[type="submit"]') !== null;
         if (hasSubmit) return;
@@ -180,7 +205,8 @@ export class Form {
 
 
     /**
-     * Действие по умолчанию при отправке формы
+     * Вызывается после успешной валидации при отправке формы. Может быть переопределён в подклассе.
+     * @param values - плоский объект со значениями всех полей ({fieldName: value})
      */
     onSubmit(values: Record<string, any>) {
         console.log(values);
@@ -188,8 +214,8 @@ export class Form {
 
 
     /**
-     * Валидирует все поля формы
-     * @returns true если форма валидна, false иначе
+     * Валидирует все поля формы.
+     * @returns `true`, если все поля прошли валидацию
      */
     validateAll(): boolean {
         let isAllValid = true;
@@ -207,8 +233,8 @@ export class Form {
     }
 
     /**
-     * Получает значения всех полей формы с применением трансформаций
-     * @returns объект с значениями полей
+     * Собирает значения всех полей формы с применением трансформаций.
+     * @returns объект `{ fieldName: transformedValue }`
      */
     getValues(): Record<string, any> {
         const values: Record<string, any> = {};

@@ -8,6 +8,9 @@ export class DateTimeField extends Field<Date> {
         super(label, 'datetime-local');
     }
 
+    /**
+	 * Привязывает поле к дом-дереву, находит `<input type="datetime-local">` и навешивает обработчик. 
+	 */
     override attachElement(base: HTMLElement): void {
         const fieldContainer = this.bindBaseElements(base);
         const input = base.querySelector('input.kform-control');
@@ -20,16 +23,23 @@ export class DateTimeField extends Field<Date> {
         this.addUnfocusChecks(fieldContainer);
     }
 
+    /**
+	 * Парсит входную строку в объект `Date` и обновляет значение поля. 
+	 */
     protected override fieldChanged(sender: HTMLElement, data?: object): void {
         const val = (sender as HTMLInputElement).value;
         const date = new Date(val);
         if (!isNaN(date.getTime())) {
             this.setValue(date);
+        } else {
+            this.setValue(null);
         }
     }
 
     /**
-     * Валидация минимальной даты и времени
+     * Валидация минимальной даты и времени.
+     * @param minDateTime - нижняя граница (значение или фабрика)
+     * @param message - переопределение сообщения об ошибке
      */
     min(minDateTime: Date | (() => Date), message?: string): this {
         return this.validate(value => {
@@ -42,7 +52,9 @@ export class DateTimeField extends Field<Date> {
     }
 
     /**
-     * Валидация максимальной даты и времени
+     * Валидация максимальной даты и времени.
+     * @param maxDateTime - верхняя граница (значение или фабрика)
+     * @param message - переопределение сообщения об ошибке
      */
     max(maxDateTime: Date | (() => Date), message?: string): this {
         return this.validate(value => {
@@ -55,7 +67,8 @@ export class DateTimeField extends Field<Date> {
     }
 
     /**
-     * Валидация что дата и время в будущем
+     * Валидация, что дата и время находятся в будущем.
+     * @param message - переопределение сообщения об ошибке
      */
     future(message?: string): this {
         return this.validate(value => {
@@ -68,7 +81,8 @@ export class DateTimeField extends Field<Date> {
     }
 
     /**
-     * Валидация что дата и время в прошлом
+     * Валидация, что дата и время находятся в прошлом.
+     * @param message - переопределение сообщения об ошибке
      */
     past(message?: string): this {
         return this.validate(value => {

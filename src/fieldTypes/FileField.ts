@@ -5,12 +5,15 @@ import { Field } from '../Field.js';
  */
 export class FileField extends Field<File | File[]> {
 
-    private _multiple: boolean = false; // todo:
+    private _multiple: boolean = false;
 
     constructor(label: string) {
         super(label, 'file');
     }
 
+    /**
+	 * Привязывает поле к дом-дереву, находит `<input type="file">` и навешивает обработчик. 
+	 */
     override attachElement(base: HTMLElement): void {
         const fieldContainer = this.bindBaseElements(base);
         const input = base.querySelector('input.kform-control[type="file"]');
@@ -25,6 +28,9 @@ export class FileField extends Field<File | File[]> {
         this.addUnfocusChecks(fieldContainer);
     }
 
+    /**
+	 * Обновляет значение поля: единственный файл, коллекция File[] или `null` при отсутствии выбора. 
+	 */
     protected fieldChanged(sender: HTMLElement, data?: object): void {
         const files = (sender as HTMLInputElement).files;
         if (!files || files.length === 0) {
@@ -41,19 +47,24 @@ export class FileField extends Field<File | File[]> {
     }
 
     /**
-     * Разрешить выбор нескольких файлов
+     * Разрешает выбор нескольких файлов одновременно. Значение поля вернётся как `File[]`.
      */
     multiple(): this {
         this._multiple = true;
         return this;
     }
 
+    /**
+	 * Возвращает `true`, если поле настроено на множественный выбор файлов. 
+	 */
     isMultiple(): boolean {
         return this._multiple;
     }
 
     /**
-     * Валидация типа файлов
+     * Валидация типов файлов по MIME-типу.
+     * @param mimeTypes - массив допустимых MIME-типов (например, `['image/png', 'image/jpeg']`)
+     * @param message - переопределение сообщения об ошибке
      */
     accept(mimeTypes: string[], message?: string): this {
         return this.validate(value => {
@@ -69,7 +80,9 @@ export class FileField extends Field<File | File[]> {
     }
 
     /**
-     * Валидация максимального размера файла (в байтах)
+     * Валидация максимального размера каждого файла.
+     * @param bytes - максимальный допустимый размер в байтах
+     * @param message - переопределение сообщения об ошибке
      */
     maxSize(bytes: number, message?: string): this {
         return this.validate(value => {

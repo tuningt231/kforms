@@ -8,6 +8,9 @@ export class DateField extends Field<Date> {
         super(label, 'date');
     }
     
+    /**
+	 * Привязывает поле к дом-дереву, находит `<input type="date">` и навешивает обработчик. 
+	 */
     override attachElement(base: HTMLElement): void {
         const fieldContainer = this.bindBaseElements(base);
         const input = base.querySelector('input.kform-control');
@@ -20,16 +23,23 @@ export class DateField extends Field<Date> {
         this.addUnfocusChecks(fieldContainer);
     }
 
+    /**
+	 * Парсит входную строку в объект `Date` и обновляет значение поля. 
+	 */
     protected override fieldChanged(sender: HTMLElement, data?: object): void {
         const val = (sender as HTMLInputElement).value;
         const date = new Date(val);
         if (!isNaN(date.getTime())) {
             this.setValue(date);
+        } else {
+            this.setValue(null);
         }
     }
 
     /**
-     * Валидация минимальной даты
+     * Валидация минимальной даты.
+     * @param minDate - нижняя граница даты (значение или фабрика для динамической вычисления)
+     * @param message - переопределение сообщения об ошибке
      */
     min(minDate: Date | (() => Date), message?: string): this {
         return this.validate(value => {
@@ -42,7 +52,9 @@ export class DateField extends Field<Date> {
     }
 
     /**
-     * Валидация максимальной даты
+     * Валидация максимальной даты.
+     * @param maxDate - верхняя граница даты (значение или фабрика для динамической вычисления)
+     * @param message - переопределение сообщения об ошибке
      */
     max(maxDate: Date | (() => Date), message?: string): this {
         return this.validate(value => {
@@ -55,7 +67,8 @@ export class DateField extends Field<Date> {
     }
 
     /**
-     * Валидация что дата в будущем
+     * Валидация, что дата находится в будущем.
+     * @param message - переопределение сообщения об ошибке
      */
     future(message?: string): this {
         return this.validate(value => {
@@ -69,7 +82,8 @@ export class DateField extends Field<Date> {
     }
 
     /**
-     * Валидация что дата в прошлом
+     * Валидация, что дата находится в прошлом.
+     * @param message - переопределение сообщения об ошибке
      */
     past(message?: string): this {
         return this.validate(value => {

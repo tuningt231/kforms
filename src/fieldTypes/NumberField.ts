@@ -20,6 +20,9 @@ export class NumberField extends Field<number> {
         super(label, 'number');
     }
 
+    /**
+	 * Привязывает поле к дом-дереву, находит `<input type="number">` и навешивает обработчик. 
+	 */
     override attachElement(base: HTMLElement): void {
         const fieldContainer = this.bindBaseElements(base);
         const input = base.querySelector('input.kform-control');
@@ -32,15 +35,22 @@ export class NumberField extends Field<number> {
         this.addUnfocusChecks(fieldContainer);
     }
 
+    /**
+	 * Преобразует строковое значение в число и обновляет поле; пустая строка или нечисловое значение игнорируются. 
+	 */
     protected override fieldChanged(sender: HTMLElement, data?: object): void {
         const val = (sender as HTMLInputElement).value;
         if (val.trim() !== '' && Number.isFinite(Number(val))) {
             this.setValue(Number(val));
+        } else {
+            this.setValue(null);
         }
     }
 
     /**
-     * Валидация минимального значения
+     * Валидация минимального значения.
+     * @param minValue - минимально допустимое число
+     * @param message - переопределение сообщения об ошибке
      */
     min(minValue: number, message?: string): this {
         return this.validate(value => ({
@@ -50,7 +60,9 @@ export class NumberField extends Field<number> {
     }
 
     /**
-     * Валидация максимального значения
+     * Валидация максимального значения.
+     * @param maxValue - максимально допустимое число
+     * @param message - переопределение сообщения об ошибке
      */
     max(maxValue: number, message?: string): this {
         return this.validate(value => ({
@@ -60,7 +72,10 @@ export class NumberField extends Field<number> {
     }
 
     /**
-     * Валидация диапазона значений
+     * Валидация диапазона значений.
+     * @param minValue - нижняя граница диапазона
+     * @param maxValue - верхняя граница диапазона
+     * @param message - переопределение сообщения об ошибке
      */
     between(minValue: number, maxValue: number, message?: string): this {
         return this.validate(value => ({
@@ -70,7 +85,8 @@ export class NumberField extends Field<number> {
     }
 
     /**
-     * Валидация положительного числа
+     * Валидация положительного числа (> 0).
+     * @param message - переопределение сообщения об ошибке
      */
     positive(message?: string): this {
         return this.validate(value => ({
@@ -80,7 +96,8 @@ export class NumberField extends Field<number> {
     }
 
     /**
-     * Валидация отрицательного числа
+     * Валидация отрицательного числа (< 0).
+     * @param message - переопределение сообщения об ошибке
      */
     negative(message?: string): this {
         return this.validate(value => ({
@@ -90,7 +107,8 @@ export class NumberField extends Field<number> {
     }
 
     /**
-     * Валидация целого числа
+     * Валидация целого числа.
+     * @param message - переопределение сообщения об ошибке
      */
     integer(message?: string): this {
         return this.validate(value => ({

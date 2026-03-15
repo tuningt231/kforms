@@ -8,6 +8,9 @@ export class TextField extends Field<string> {
         super(label, fieldType);
     }
 
+    /**
+	 * Привязывает поле к дом-дереву, находит `<input>` и навешивает обработчик события `input`. 
+	 */
     override attachElement(base: HTMLElement): void {
         const fieldContainer = this.bindBaseElements(base);
         const input = base.querySelector('input.kform-control');
@@ -20,12 +23,17 @@ export class TextField extends Field<string> {
         this.addUnfocusChecks(fieldContainer);
     }
 
+    /**
+	 * Обновляет значение поля при каждом событии `input`. 
+	 */
     protected override fieldChanged(sender: HTMLElement, data?: object): void {
         this.setValue((sender as HTMLInputElement).value);
     }
 
     /**
-     * Валидация минимальной длины строки
+     * Валидация минимальной длины строки.
+     * @param min - минимальное число символов
+     * @param message - переопределение сообщения об ошибке
      */
     minLength(min: number, message?: string): this {
         return this.validate(value => ({
@@ -35,7 +43,9 @@ export class TextField extends Field<string> {
     }
 
     /**
-     * Валидация максимальной длины строки
+     * Валидация максимальной длины строки.
+     * @param max - максимальное число символов
+     * @param message - переопределение сообщения об ошибке
      */
     maxLength(max: number, message?: string): this {
         return this.validate(value => ({
@@ -45,7 +55,9 @@ export class TextField extends Field<string> {
     }
 
     /**
-     * Валидация точной длины строки
+     * Валидация точной длины строки.
+     * @param len - ожидаемое количество символов
+     * @param message - переопределение сообщения об ошибке
      */
     length(len: number, message?: string): this {
         return this.validate(value => ({
@@ -55,7 +67,9 @@ export class TextField extends Field<string> {
     }
 
     /**
-     * Валидация по регулярному выражению
+     * Валидация по регулярному выражению.
+     * @param pattern - регулярное выражение для проверки
+     * @param message - переопределение сообщения об ошибке
      */
     match(pattern: RegExp, message?: string): this {
         return this.validate(value => ({
@@ -65,14 +79,17 @@ export class TextField extends Field<string> {
     }
 
     /**
-     * Alias для match
+     * Алиас для `match`.
+     * @param pattern - регулярное выражение для проверки
+     * @param message - переопределение сообщения об ошибке
      */
     pattern(pattern: RegExp, message?: string): this {
         return this.match(pattern, message);
     }
 
     /**
-     * Проверка что строка не пустая (не только пробелы)
+     * Проверяет, что строка не состоит только из пробелов.
+     * @param message - переопределение сообщения об ошибке
      */
     notBlank(message?: string): this {
         return this.validate(value => ({
@@ -82,7 +99,9 @@ export class TextField extends Field<string> {
     }
 
     /**
-     * Проверка что строка содержит подстроку
+     * Проверяет, что строка содержит заданную подстроку.
+     * @param substring - ожидаемая подстрока
+     * @param message - переопределение сообщения об ошибке
      */
     contains(substring: string, message?: string): this {
         return this.validate(value => ({
@@ -92,7 +111,9 @@ export class TextField extends Field<string> {
     }
 
     /**
-     * Проверка что строка начинается с подстроки
+     * Проверяет, что строка начинается с заданного префикса.
+     * @param prefix - ожидаемый префикс
+     * @param message - переопределение сообщения об ошибке
      */
     startsWith(prefix: string, message?: string): this {
         return this.validate(value => ({
@@ -102,7 +123,9 @@ export class TextField extends Field<string> {
     }
 
     /**
-     * Проверка что строка заканчивается подстрокой
+     * Проверяет, что строка заканчивается заданным суффиксом.
+     * @param suffix - ожидаемый суффикс
+     * @param message - переопределение сообщения об ошибке
      */
     endsWith(suffix: string, message?: string): this {
         return this.validate(value => ({
@@ -112,7 +135,8 @@ export class TextField extends Field<string> {
     }
 
     /**
-     * Проверка что строка содержит только цифры
+     * Проверяет, что строка содержит только цифры.
+     * @param message - переопределение сообщения об ошибке
      */
     numeric(message?: string): this {
         return this.match(/^[0-9]+$/, message || 'Только цифры');

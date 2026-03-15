@@ -10,6 +10,10 @@ export class CheckboxField<T> extends Field<T[]> {
         super(label, 'checkbox');
     }
 
+    /**
+     * Устанавливает список вариантов выбора.
+     * @param opts - массив опций (можно передавать примитивные значения или объекты `FieldOption`)
+     */
     options(opts: FieldOption<T>[] | T[]): this {
         return super.setOptionsInternal(opts.map(opt => {
             if (typeof opt === 'object' && opt !== null && 'value' in opt) {
@@ -19,6 +23,9 @@ export class CheckboxField<T> extends Field<T[]> {
         }));
     }
 
+    /**
+	 * Привязывает поле к дом-дереву, находит все `<input type="checkbox">` и навешивает обработчики. 
+	 */
     override attachElement(base: HTMLElement): void {
         const fieldContainer = this.bindBaseElements(base);
         const inputs = Array.from(base.querySelectorAll('input.kform-control[type="checkbox"]'));
@@ -34,6 +41,9 @@ export class CheckboxField<T> extends Field<T[]> {
         this.addUnfocusChecks(fieldContainer);
     }
 
+    /**
+	 * Находит объект `FieldOption` для переданного `<input>`: сначала по `data-option-index`, затем по значению. 
+	 */
     private resolveOption(input: HTMLInputElement): FieldOption<T[]> | undefined {
         const indexRaw = input.getAttribute('data-option-index');
         if (indexRaw !== null) {
@@ -45,6 +55,9 @@ export class CheckboxField<T> extends Field<T[]> {
         return this._options.find(option => String(option.value) === valueRaw);
     }
 
+    /**
+	 * Колбэк изменения значения поля. 
+	 */
     protected override fieldChanged(sender: HTMLElement, data?: object): void {
         if (data && 'option' in data) {
             let newVal = this.value;
@@ -69,7 +82,9 @@ export class CheckboxField<T> extends Field<T[]> {
     }
 
     /**
-     * Валидация минимального количества выбранных элементов
+     * Валидация минимального количества выбранных элементов.
+     * @param min - минимальное число выбранных чекбоксов
+     * @param message - переопределение сообщения об ошибке
      */
     minSelected(min: number, message?: string): this {
         if (min > 0) {
@@ -82,7 +97,9 @@ export class CheckboxField<T> extends Field<T[]> {
     }
 
     /**
-     * Валидация максимального количества выбранных элементов
+     * Валидация максимального количества выбранных элементов.
+     * @param max - максимальное число выбранных чекбоксов
+     * @param message - переопределение сообщения об ошибке
      */
     maxSelected(max: number, message?: string): this {
         return this.validate(value => ({

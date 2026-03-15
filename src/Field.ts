@@ -48,14 +48,23 @@ export abstract class Field<T> {
         this._inputType = fieldType;
     }
 
+    /**
+     * Метка поля, отображаемая в разметке. 
+     */
     get label(): string {
         return this._label;
     }
 
+    /**
+     * Тип HTML-ввода поля (например, "text", "email", "select"). 
+     */
     get inputType(): string {
         return this._inputType;
     }
 
+    /**
+     * Список опций поля, используемый рендерером. 
+     */
     get rendererOptions(): FieldOption<T>[] {
         return this._options;
     }
@@ -125,14 +134,21 @@ export abstract class Field<T> {
         return result;
     }
 
+    /**
+     * Привязывает поле к существующему DOM-элементу, находя вложенные элементы управления и навешивая обработчики.
+     * @param base - корневой элемент поля (`.kform-field`)
+     */
     abstract attachElement(base: HTMLElement): void;
 
     /**
-     * Колбэк, вызываемый при изменении элемента ввода
+     * Вызывается при изменении элемента ввода; обновляет значение поля. 
      */
     protected abstract fieldChanged(sender: HTMLElement, data?: object): void;
 
 
+    /**
+     * Навешивает проверку валидации при потере фокуса на указанный элемент. 
+     */
     protected addUnfocusChecks(node: HTMLElement): void {
         this.bindDomListener(node, 'focusout', (e) => {
             const relatedTarget = (e as FocusEvent).relatedTarget as Node | null;
@@ -141,6 +157,9 @@ export abstract class Field<T> {
         });
     }
 
+    /**
+     * Связывает базовый элемент поля с внутренними ссылками; при необходимости создаёт недостающие контейнеры. 
+     */
     protected bindBaseElements(base: HTMLElement): HTMLElement {
         this.resetDomBindings();
 
@@ -165,11 +184,17 @@ export abstract class Field<T> {
         return this._fieldContainer;
     }
 
+    /**
+     * Добавляет DOM-обработчик и сохраняет функцию для его последующего удаления (идемпотентность). 
+     */
     protected bindDomListener(target: EventTarget, type: string, listener: EventListener): void {
         target.addEventListener(type, listener);
         this._domUnbinders.push(() => target.removeEventListener(type, listener));
     }
 
+    /**
+     * Снимает все ранее зарегистрированные DOM-обработчики и очищает список отписок. 
+     */
     private resetDomBindings(): void {
         this._domUnbinders.forEach(unbind => unbind());
         this._domUnbinders = [];
@@ -177,7 +202,7 @@ export abstract class Field<T> {
 
 
     /**
-     * Обработчик изменения значения input
+     * Устанавливает новое значение поля, сбрасывает ошибки и уведомляет подписчиков. 
      */
     protected setValue(value: T | null): void {
         this._value = value;
@@ -203,10 +228,13 @@ export abstract class Field<T> {
         }
     }
 
+    /**
+     * Нормализует и сохраняет список опций выбора, приводя примитивные значения к формату `FieldOption`. 
+     */
     protected setOptionsInternal(opts: FieldOption<T>[] | T[]): this {
         this._options = opts.map(opt => {
             if (typeof opt === 'object' && opt !== null && 'value' in opt) {
-                return {value: opt.value, label: opt.label || String(opt.value)};
+                return { value: opt.value, label: opt.label || String(opt.value) };
             }
             return { value: opt, label: String(opt) };
         });
@@ -214,13 +242,18 @@ export abstract class Field<T> {
     }
 
     /**
-     * Подписаться на изменение значения поля
+     * Подписывает колбэк на изменение значения поля.
+     * @param callback - функция, вызываемая при каждом обновлении значения
      */
     addUpdateListener(callback: () => void): this {
         this._updateListeners.push(callback);
         return this;
     }
 
+    /**
+     * Перезапускает валидацию текущего поля при изменении любого из переданных полей.
+     * @param fields - поля, от которых зависит данное поле
+     */
     dependsOn(...fields: Field<any>[]): this {
         for (const field of fields) {
             field.addUpdateListener(() => {
@@ -230,6 +263,10 @@ export abstract class Field<T> {
         return this;
     }
 
+    /**
+     * Добавляет функцию валидации значения поля.
+     * @param func - валидатор; может возвращать `boolean` или объект `{ isValid, message? }`
+     */
     validate(func: ValidatorFunction<T> | DefaultValidatorFunction<T>): this {
         const normalizedFunc: ValidatorFunction<T> = (value: T) => {
             const result = func(value);
@@ -242,6 +279,10 @@ export abstract class Field<T> {
         return this;
     }
 
+    /**
+     * Делает поле обязательным, когда переданная функция возвращает истину.
+     * @param func - условие обязательности; может возвращать `boolean` или объект `{ isRequired, message? }`
+     */
     requiredWhen(func: RequiredFunction | DefaultRequiredFunction): this {
         const normalizedFunc: RequiredFunction = () => {
             const isRequired = func();
@@ -254,12 +295,20 @@ export abstract class Field<T> {
         return this;
     }
 
+    /**
+     * Делает поле безусловно обязательным.
+     * @param message - сообщение об ошибке при пустом значении
+     */
     required(message?: string): this {
         if (message === undefined)
             return this.requiredWhen(() => true);
         return this.requiredWhen(() => ({ isRequired: true, message }));
     }
 
+    /**
+     * Добавляет функцию трансформации, применяемую к значению при вызове `runTransforms()`.
+     * @param func - функция преобразования значения
+     */
     transform(func: TransformFunction<any, any>): this {
         this._transformCallbacks.push(func);
         return this;

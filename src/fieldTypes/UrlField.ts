@@ -9,6 +9,9 @@ export class UrlField extends TextField {
         this.validateUrl(message || 'Неверный формат URL');
     }
 
+    /**
+	 * Внутренняя валидация формата URL через `new URL()`. 
+	 */
     private validateUrl(message: string): this {
         return this.validate(value => {
             try {

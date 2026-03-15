@@ -8,6 +8,9 @@ export class TextAreaField extends Field<string> {
         super(label, 'textarea');
     }
 
+    /**
+	 * Привязывает поле к дом-дереву, находит `<textarea>` и навешивает обработчик события `input`. 
+	 */
     override attachElement(base: HTMLElement): void {
         const fieldContainer = this.bindBaseElements(base);
         const input = base.querySelector('textarea.kform-control');
@@ -20,12 +23,17 @@ export class TextAreaField extends Field<string> {
         this.addUnfocusChecks(fieldContainer);
     }
 
+    /**
+	 * Обновляет значение поля при каждом событии `input`. 
+	 */
     protected override fieldChanged(sender: HTMLElement, data?: object): void {
         this.setValue((sender as HTMLInputElement).value);
     }
 
     /**
-     * Валидация минимальной длины
+     * Валидация минимальной длины.
+     * @param min - минимальное количество символов
+     * @param message - переопределение сообщения об ошибке
      */
     minLength(min: number, message?: string): this {
         return this.validate(value => ({
@@ -35,7 +43,9 @@ export class TextAreaField extends Field<string> {
     }
 
     /**
-     * Валидация максимальной длины
+     * Валидация максимальной длины.
+     * @param max - максимальное количество символов
+     * @param message - переопределение сообщения об ошибке
      */
     maxLength(max: number, message?: string): this {
         return this.validate(value => ({
@@ -45,7 +55,8 @@ export class TextAreaField extends Field<string> {
     }
 
     /**
-     * Проверка что текст не пустой
+     * Проверяет, что текст не состоит только из пробелов.
+     * @param message - переопределение сообщения об ошибке
      */
     notBlank(message?: string): this {
         return this.validate(value => ({
@@ -55,7 +66,9 @@ export class TextAreaField extends Field<string> {
     }
 
     /**
-     * Валидация минимального количества слов
+     * Проверяет минимальное количество слов в тексте.
+     * @param min - минимальное количество слов
+     * @param message - переопределение сообщения об ошибке
      */
     minWords(min: number, message?: string): this {
         return this.validate(value => {
