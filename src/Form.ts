@@ -43,6 +43,7 @@ export class Form {
             const base = this.findOrCreateFieldBase(this.formElement, field, key);
             const preparedElement = this.ensureFieldMarkup(base, field, key);
             field.attachElement(preparedElement);
+            field.updateVisibility();
         }
 
         this.ensureSubmitButton(this.formElement);
@@ -242,7 +243,7 @@ export class Form {
         for (const key of Object.keys(this)) {
             const field = (this as any)[key];
             if (field instanceof Field) {
-                values[key] = field.runTransforms();
+                values[key] = field.isHidden() ? null : field.runTransforms();
             }
         }
 

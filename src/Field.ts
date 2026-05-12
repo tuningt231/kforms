@@ -39,6 +39,7 @@ export abstract class Field<T> {
     private _requiredCallbacks: RequiredFunction[] = [];
     private _validationCallbacks: ValidatorFunction<T>[] = [];
     private _transformCallbacks: TransformFunction<any, any>[] = [];
+    private _hiddenCallbacks: Array<() => boolean> = [];
 
     private _updateListeners: Array<() => void> = [];
     private _domUnbinders: Array<() => void> = [];
@@ -93,6 +94,11 @@ export abstract class Field<T> {
      */
     runAllChecks(): boolean {
         this._errors = [];
+
+        if (this.isHidden()) {
+            this.updateDisplayedErrors();
+            return true;
+        }
 
         if (this.isEmpty()) {
             for (const callback of this._requiredCallbacks) {
@@ -257,10 +263,37 @@ export abstract class Field<T> {
     dependsOn(...fields: Field<any>[]): this {
         for (const field of fields) {
             field.addUpdateListener(() => {
+                this.updateVisibility();
                 this.runAllChecks();
             });
         }
         return this;
+    }
+
+    /**
+     * Скрывает поле, когда переданная функция возвращает `true`.
+     * Скрытое поле пропускает валидацию и возвращает `null` в `getValues()`.
+     * @param func - условие скрытия поля
+     */
+    hiddenWhen(func: () => boolean): this {
+        this._hiddenCallbacks.push(func);
+        return this;
+    }
+
+    /**
+     * Возвращает `true`, если хотя бы один колбэк `hiddenWhen` вернул `true`.
+     */
+    isHidden(): boolean {
+        return this._hiddenCallbacks.some(cb => cb());
+    }
+
+    /**
+     * Обновляет видимость базового элемента поля в DOM согласно `isHidden()`.
+     * Вызывается автоматически при привязке и при изменении зависимых полей.
+     */
+    updateVisibility(): void {
+        if (!this._baseElement) return;
+        this._baseElement.style.display = this.isHidden() ? 'none' : '';
     }
 
     /**
