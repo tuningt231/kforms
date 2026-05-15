@@ -263,12 +263,19 @@ export abstract class Field<T> {
     dependsOn(...fields: Field<any>[]): this {
         for (const field of fields) {
             field.addUpdateListener(() => {
+                this.refreshOptions();
                 this.updateVisibility();
                 this.runAllChecks();
             });
         }
         return this;
     }
+
+    /**
+     * Хук для пересчёта динамических опций при изменении зависимых полей.
+     * Переопределяется в SelectField, RadioField, CheckboxField.
+     */
+    protected refreshOptions(): void {}
 
     /**
      * Скрывает поле, когда переданная функция возвращает `true`.

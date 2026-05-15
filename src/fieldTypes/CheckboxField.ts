@@ -1,10 +1,13 @@
 import { Field } from '../Field.js';
 import type { FieldOption } from './FieldOption.js';
 
+type OptionsSource<T> = FieldOption<T>[] | T[] | (() => FieldOption<T>[] | T[]);
+
 /**
  * Checkbox поле (множественный выбор)
  */
 export class CheckboxField<T> extends Field<T[]> {
+    private _optionsCallback: (() => FieldOption<T>[] | T[]) | null = null;
 
     constructor(label: string) {
         super(label, 'checkbox');
@@ -12,15 +15,77 @@ export class CheckboxField<T> extends Field<T[]> {
 
     /**
      * Устанавливает список вариантов выбора.
-     * @param opts - массив опций (можно передавать примитивные значения или объекты `FieldOption`)
+     * @param opts - статический массив или колбэк, пересчитываемый при изменении зависимых полей
      */
-    options(opts: FieldOption<T>[] | T[]): this {
+    options(opts: OptionsSource<T>): this {
+        if (typeof opts === 'function') {
+            this._optionsCallback = opts;
+            return this.applyOptions(opts());
+        }
+        return this.applyOptions(opts);
+    }
+
+    private applyOptions(opts: FieldOption<T>[] | T[]): this {
         return super.setOptionsInternal(opts.map(opt => {
             if (typeof opt === 'object' && opt !== null && 'value' in opt) {
                 return { value: [opt.value], label: opt.label || String(opt.value) };
             }
             return { value: [opt], label: String(opt) };
         }));
+    }
+
+    protected override refreshOptions(): void {
+        if (!this._optionsCallback) return;
+        this.applyOptions(this._optionsCallback());
+        const current = this._value;
+        if (Array.isArray(current) && current.length > 0) {
+            const validValues = new Set(this._options.map(opt => String(opt.value[0])));
+            const filtered = current.filter(v => validValues.has(String(v)));
+            if (filtered.length !== current.length) this.setValue(filtered);
+        }
+        this.rebuildChoiceDom();
+    }
+
+    private rebuildChoiceDom(): void {
+        if (!this._fieldContainer || !this._baseElement) return;
+
+        const fieldName = this._baseElement.getAttribute('data-field-name') ?? '';
+
+        for (const el of Array.from(this._fieldContainer.querySelectorAll('[data-role="option"]'))) {
+            el.remove();
+        }
+
+        this._options.forEach((option, idx) => {
+            const container = document.createElement('div');
+            container.className = 'kform-option';
+            container.setAttribute('data-role', 'option');
+            container.setAttribute('data-option-index', String(idx));
+
+            const input = document.createElement('input');
+            input.className = 'kform-control';
+            input.setAttribute('data-role', 'control');
+            input.type = 'checkbox';
+            input.name = fieldName;
+            input.id = `${fieldName}-${idx}`;
+            input.setAttribute('data-option-index', String(idx));
+            input.setAttribute('data-option-value', String(option.value));
+            input.value = String(option.value);
+
+            const label = document.createElement('label');
+            label.className = 'kform-option-label';
+            label.setAttribute('data-role', 'option-label');
+            label.htmlFor = input.id;
+            label.innerText = option.label;
+
+            container.appendChild(input);
+            container.appendChild(label);
+            this._fieldContainer!.appendChild(container);
+
+            this.bindDomListener(input, 'change', () => {
+                const opt = this.resolveOption(input);
+                if (opt) this.fieldChanged(input, { option: opt });
+            });
+        });
     }
 
     /**
